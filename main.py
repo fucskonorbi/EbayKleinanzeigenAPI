@@ -18,7 +18,7 @@ def find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_id
     soup = BeautifulSoup(html_content, "html.parser")
     items = soup.find_all("article", {"class": "aditem"})
     items_to_return = []
-    print(items)
+    # print(items)
     for item in items:
         try:
             # time of item is in a div tag with aditem-main--top--right class. Remove the i tag and get the text
@@ -58,7 +58,7 @@ def find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_id
             if address is not None:
                 # get the text
                 address = address.text.strip()
-            print(time, title)
+            # print(time, title)
             if time.date() == timestamp.date():
                 if time.time() > timestamp.time():
                     items_to_return.append({"timestamp": time, "link": link, "item_id": item_id, "title": title, "price": price, "address": address})
@@ -73,43 +73,48 @@ def find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_id
     return items_to_return
 
 
-# simulate the mobile app user agent
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--simulate", type=str, required=True, default=False, help="Simulate the mobile app user agent")
-    args = parser.parse_args()
-    if args.simulate == "True":
-        found_items = []
-        while True:
-            if len(found_items) == 0:
-                # get items from the last 5 minutes
-                timestamp = datetime.datetime.now() - datetime.timedelta(minutes=5)
-                found_items = find_items_on_ebay_kleinanzeigen_after_timestamp("macbook", timestamp, [])
-                # reverse the list so that the newest items are at the beginning
-                found_items.reverse()
-            else:
-                # get the timestamp of the last item
-                timestamp = found_items[-1]["timestamp"]
-                # get the ids of the items which have the same timestamp
-                item_ids_to_skip = [item["item_id"] for item in found_items if item["timestamp"] == timestamp]
-                # get items
-                new_items = find_items_on_ebay_kleinanzeigen_after_timestamp("macbook", timestamp, item_ids_to_skip)
-                # reverse the list so that the newest items are at the beginning
-                new_items.reverse()
-                print("New items:", new_items)
-                # add the new items to the list
-                found_items.extend(new_items)
-            # print time and ids of the items
-            print("Time: ", datetime.datetime.now(), "Found items: ", [item for item in found_items])
-            sleep(180)
-    else:
-        # create an API where the user can search for a keyword and get the results
-        # create a FastAPI instance
-        app = FastAPI()
-        # define the api endpoint, where the user can search for a keyword (needs to provide a keyword, timestamp and
-        # item_ids_to_skip)
-        @app.get("/search")
-        def search(keyword: str, timestamp: str, item_ids_to_skip: str):
-            timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
-            item_ids_to_skip = item_ids_to_skip.split(",")
-            return find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_ids_to_skip)
+# # simulate the mobile app user agent
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--mode", type=str, required=True, default="api", help="Can be 'simulate' or 'api'")
+#     args = parser.parse_args()
+#     if args.mode == "simulate":
+#         found_items = []
+#         while True:
+#             if len(found_items) == 0:
+#                 # get items from the last 5 minutes
+#                 timestamp = datetime.datetime.now() - datetime.timedelta(minutes=5)
+#                 found_items = find_items_on_ebay_kleinanzeigen_after_timestamp("macbook", timestamp, [])
+#                 # reverse the list so that the newest items are at the beginning
+#                 found_items.reverse()
+#             else:
+#                 # get the timestamp of the last item
+#                 timestamp = found_items[-1]["timestamp"]
+#                 # get the ids of the items which have the same timestamp
+#                 item_ids_to_skip = [item["item_id"] for item in found_items if item["timestamp"] == timestamp]
+#                 # get items
+#                 new_items = find_items_on_ebay_kleinanzeigen_after_timestamp("macbook", timestamp, item_ids_to_skip)
+#                 # reverse the list so that the newest items are at the beginning
+#                 new_items.reverse()
+#                 print("New items:", new_items)
+#                 # add the new items to the list
+#                 found_items.extend(new_items)
+#             # print time and ids of the items
+#             print("Time: ", datetime.datetime.now(), "Found items: ", [item for item in found_items])
+#             sleep(180)
+#     elif args.mode == "api":
+# create an API where the user can search for a keyword and get the results
+# create a FastAPI instance
+app = FastAPI()
+# define the api endpoint, where the user can search for a keyword (needs to provide a keyword, timestamp and
+# item_ids_to_skip)
+print("Starting API")
+@app.get("/search")
+def search(keyword: str, timestamp: str, item_ids_to_skip: str):
+    timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+    # timestamp_example = "2021-01-01 00:00:00.000000"
+    item_ids_to_skip = item_ids_to_skip.split(",")
+    return find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_ids_to_skip)
+    #
+    # else:
+    #     print("Invalid mode")
