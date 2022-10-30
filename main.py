@@ -1,13 +1,11 @@
 import os
-import socket
 
 import uvicorn
 from bs4 import BeautifulSoup
 import requests
-from time import sleep
 from fastapi import FastAPI
+from pydantic import BaseModel
 import datetime
-import argparse
 
 BASE_URL = "https://www.ebay-kleinanzeigen.de/"
 HEADERS = {
@@ -77,49 +75,20 @@ def find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_id
     return items_to_return
 
 
-# simulate the mobile app user agent
+# create an API where the user can search for a keyword and get the results
+# create a FastAPI instance
+app = FastAPI()
+# define the api endpoint, where the user can search for a keyword (needs to provide a keyword, timestamp and
+# item_ids_to_skip)
+print("Starting API")
+
+
+@app.get("/search")
+def search(keyword: str, timestamp: str, item_ids_to_skip: str):
+    timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+    item_ids_to_skip = item_ids_to_skip.split(",")
+    return find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_ids_to_skip)
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, required=True, default="api", help="Can be 'simulate' or 'api'")
-    args = parser.parse_args()
-    if args.mode == "simulate":
-        found_items = []
-        while True:
-            if len(found_items) == 0:
-                # get items from the last 5 minutes
-                timestamp = datetime.datetime.now() - datetime.timedelta(minutes=5)
-                found_items = find_items_on_ebay_kleinanzeigen_after_timestamp("macbook", timestamp, [])
-                # reverse the list so that the newest items are at the beginning
-                found_items.reverse()
-            else:
-                # get the timestamp of the last item
-                timestamp = found_items[-1]["timestamp"]
-                # get the ids of the items which have the same timestamp
-                item_ids_to_skip = [item["item_id"] for item in found_items if item["timestamp"] == timestamp]
-                # get items
-                new_items = find_items_on_ebay_kleinanzeigen_after_timestamp("macbook", timestamp, item_ids_to_skip)
-                # reverse the list so that the newest items are at the beginning
-                new_items.reverse()
-                print("New items:", new_items)
-                # add the new items to the list
-                found_items.extend(new_items)
-            # print time and ids of the items
-            print("Time: ", datetime.datetime.now(), "Found items: ", [item for item in found_items])
-            sleep(180)
-    elif args.mode == "api":
-        # create an API where the user can search for a keyword and get the results
-        # create a FastAPI instance
-        app = FastAPI()
-        # define the api endpoint, where the user can search for a keyword (needs to provide a keyword, timestamp and
-        # item_ids_to_skip)
-        print("Starting API")
-        @app.get("/search")
-        def search(keyword: str, timestamp: str, item_ids_to_skip: str):
-            timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
-            item_ids_to_skip = item_ids_to_skip.split(",")
-            return find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_ids_to_skip)
-
-        uvicorn.run("main:app", host="0.0.0.0", port=os.getenv("PORT", default=50000), log_level="info")
-
-    else:
-        print("Invalid mode")
+    uvicorn.run("main:app", host="0.0.0.0", port=os.getenv("PORT", default=5000), log_level="info")

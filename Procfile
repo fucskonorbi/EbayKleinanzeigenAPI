@@ -1,1 +1,1 @@
-web: python main.py --mode api
+web: python main.py
