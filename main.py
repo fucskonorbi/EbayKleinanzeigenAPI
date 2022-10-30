@@ -7,6 +7,13 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import datetime
 
+# create an API where the user can search for a keyword and get the results
+# create a FastAPI instance
+app = FastAPI()
+# define the api endpoint, where the user can search for a keyword (needs to provide a keyword, timestamp and
+# item_ids_to_skip)
+print("Starting API")
+
 BASE_URL = "https://www.ebay-kleinanzeigen.de/"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
@@ -75,20 +82,8 @@ def find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_id
     return items_to_return
 
 
-# create an API where the user can search for a keyword and get the results
-# create a FastAPI instance
-app = FastAPI()
-# define the api endpoint, where the user can search for a keyword (needs to provide a keyword, timestamp and
-# item_ids_to_skip)
-print("Starting API")
-
-
 @app.get("/search")
 def search(keyword: str, timestamp: str, item_ids_to_skip: str=""):
     timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
     item_ids_to_skip = item_ids_to_skip.split(",")
     return find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_ids_to_skip)
-
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=os.getenv("PORT", default=5000), log_level="info")
