@@ -84,7 +84,7 @@ print("Starting API")
 
 
 @app.get("/search")
-def search(keyword: str, timestamp: str, item_ids_to_skip: str):
+def search(keyword: str, timestamp: str, item_ids_to_skip: str=""):
     timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
     item_ids_to_skip = item_ids_to_skip.split(",")
     return find_items_on_ebay_kleinanzeigen_after_timestamp(keyword, timestamp, item_ids_to_skip)
